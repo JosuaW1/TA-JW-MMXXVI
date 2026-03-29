@@ -21,8 +21,9 @@ import os
 import numpy as np
 import pandas as pd
 import networkx as nx
-import matplotlib.pyplot as plt
 import matplotlib
+matplotlib.use("Agg")  # Non-interactive backend: simpan file tanpa pop-up
+import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Konfigurasi matplotlib untuk output berkualitas tinggi
@@ -78,7 +79,6 @@ def plot_roc_curves(roc_data: dict, save_path: str = None):
     if save_path:
         fig.savefig(save_path, bbox_inches="tight")
         print(f"[Viz] ROC curve disimpan: {save_path}")
-    plt.show()
     plt.close(fig)
 
 
@@ -119,7 +119,6 @@ def plot_pr_curves(pr_data: dict, save_path: str = None):
     if save_path:
         fig.savefig(save_path, bbox_inches="tight")
         print(f"[Viz] PR curve disimpan: {save_path}")
-    plt.show()
     plt.close(fig)
 
 
@@ -174,7 +173,6 @@ def plot_metrics_comparison(df_results: pd.DataFrame, save_path: str = None):
     if save_path:
         fig.savefig(save_path, bbox_inches="tight")
         print(f"[Viz] Metrics comparison disimpan: {save_path}")
-    plt.show()
     plt.close(fig)
 
 
@@ -220,7 +218,6 @@ def plot_topk_heatmap(df_results: pd.DataFrame, save_path: str = None):
     if save_path:
         fig.savefig(save_path, bbox_inches="tight")
         print(f"[Viz] Top-k heatmap disimpan: {save_path}")
-    plt.show()
     plt.close(fig)
 
 
@@ -261,7 +258,6 @@ def plot_feature_importance(fi_df: pd.DataFrame, save_path: str = None):
     if save_path:
         fig.savefig(save_path, bbox_inches="tight")
         print(f"[Viz] Feature importance disimpan: {save_path}")
-    plt.show()
     plt.close(fig)
 
 
@@ -341,7 +337,6 @@ def plot_ppi_network(G: nx.Graph,
     if save_path:
         fig.savefig(save_path, bbox_inches="tight")
         print(f"[Viz] Network disimpan: {save_path}")
-    plt.show()
     plt.close(fig)
 
 
@@ -399,7 +394,6 @@ def plot_degree_distribution(G: nx.Graph, save_path: str = None):
     if save_path:
         fig.savefig(save_path, bbox_inches="tight")
         print(f"[Viz] Degree distribution disimpan: {save_path}")
-    plt.show()
     plt.close(fig)
 
 
@@ -456,7 +450,6 @@ def plot_score_distributions(scores_positive: dict,
     if save_path:
         fig.savefig(save_path, bbox_inches="tight")
         print(f"[Viz] Score distributions disimpan: {save_path}")
-    plt.show()
     plt.close(fig)
 
 
