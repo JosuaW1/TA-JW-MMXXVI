@@ -307,9 +307,13 @@ def run_scenario(scenario: dict) -> dict:
         os.path.join(scenario_dir, "evaluation_results.csv")
     )
 
-    # Hitung data kurva
+    # Hitung data kurva dan confusion matrices
     roc_data = get_roc_curve_data(curve_data)
     pr_data = get_pr_curve_data(curve_data)
+    confusion_matrices = {
+        method: data["confusion_matrix"]
+        for method, data in curve_data.items()
+    }
 
     # ------------------------------------------------------------------
     # TAHAP 5: PREDIKSI INTERAKSI BARU
@@ -344,6 +348,7 @@ def run_scenario(scenario: dict) -> dict:
         )),
         "scores_positive": scores_positive,
         "scores_negative": scores_negative,
+        "confusion_matrices": confusion_matrices,
     }
 
     generate_all_visualizations(

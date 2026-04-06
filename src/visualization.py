@@ -457,6 +457,60 @@ def plot_score_distributions(scores_positive: dict,
 # FUNGSI UTILITAS: SIMPAN SEMUA VISUALISASI
 # ---------------------------------------------------------------------------
 
+def plot_confusion_matrices(cm_data: dict, save_path: str = None):
+    """
+    Menggambar confusion matrix untuk semua metode dalam grid layout.
+
+    Parameters
+    ----------
+    cm_data : dict
+        Dictionary {method_name: np.ndarray confusion_matrix 2x2}.
+    save_path : str, optional
+        Path untuk menyimpan gambar.
+    """
+    methods = list(cm_data.keys())
+    n_methods = len(methods)
+    ncols = 4
+    nrows = (n_methods + ncols - 1) // ncols
+
+    fig, axes = plt.subplots(nrows, ncols, figsize=(4.5 * ncols, 4 * nrows))
+    if nrows == 1:
+        axes = axes.reshape(1, -1)
+    axes = axes.flatten()
+
+    labels = ["Non-Interaksi\n(Negatif)", "Interaksi\n(Positif)"]
+
+    for i, method in enumerate(methods):
+        ax = axes[i]
+        cm = cm_data[method]
+
+        sns.heatmap(
+            cm, annot=True, fmt="d", cmap="Blues",
+            xticklabels=labels, yticklabels=labels,
+            ax=ax, cbar=False, linewidths=1, linecolor="white",
+            annot_kws={"size": 14, "fontweight": "bold"}
+        )
+        # Hitung accuracy dari confusion matrix
+        acc = (cm[0, 0] + cm[1, 1]) / cm.sum() if cm.sum() > 0 else 0
+        ax.set_title(f"{method}\n(Acc: {acc:.2%})", fontweight="bold",
+                     fontsize=10)
+        ax.set_ylabel("Aktual" if i % ncols == 0 else "")
+        ax.set_xlabel("Prediksi")
+
+    # Sembunyikan axes kosong
+    for j in range(i + 1, len(axes)):
+        axes[j].set_visible(False)
+
+    plt.suptitle("Confusion Matrix - Semua Metode Link Prediction",
+                 fontsize=14, fontweight="bold", y=1.02)
+    plt.tight_layout()
+
+    if save_path:
+        fig.savefig(save_path, bbox_inches="tight")
+        print(f"[Viz] Confusion matrices disimpan: {save_path}")
+    plt.close(fig)
+
+
 def generate_all_visualizations(results: dict, output_dir: str):
     """
     Menghasilkan dan menyimpan semua visualisasi.
@@ -476,7 +530,7 @@ def generate_all_visualizations(results: dict, output_dir: str):
 
     # 1. ROC Curves
     if "roc_data" in results:
-        print("\n[1/8] ROC Curves...")
+        print("\n[1/9] ROC Curves...")
         plot_roc_curves(
             results["roc_data"],
             save_path=os.path.join(output_dir, "roc_curves.png")
@@ -484,7 +538,7 @@ def generate_all_visualizations(results: dict, output_dir: str):
 
     # 2. PR Curves
     if "pr_data" in results:
-        print("[2/8] Precision-Recall Curves...")
+        print("[2/9] Precision-Recall Curves...")
         plot_pr_curves(
             results["pr_data"],
             save_path=os.path.join(output_dir, "pr_curves.png")
@@ -492,7 +546,7 @@ def generate_all_visualizations(results: dict, output_dir: str):
 
     # 3. Metrics Comparison
     if "df_results" in results:
-        print("[3/8] Metrics Comparison...")
+        print("[3/9] Metrics Comparison...")
         plot_metrics_comparison(
             results["df_results"],
             save_path=os.path.join(output_dir, "metrics_comparison.png")
@@ -500,7 +554,7 @@ def generate_all_visualizations(results: dict, output_dir: str):
 
     # 4. Top-k Heatmap
     if "df_results" in results:
-        print("[4/8] Top-k Heatmap...")
+        print("[4/9] Top-k Heatmap...")
         plot_topk_heatmap(
             results["df_results"],
             save_path=os.path.join(output_dir, "topk_heatmap.png")
@@ -508,7 +562,7 @@ def generate_all_visualizations(results: dict, output_dir: str):
 
     # 5. Feature Importance
     if "feature_importance" in results:
-        print("[5/8] Feature Importance...")
+        print("[5/9] Feature Importance...")
         plot_feature_importance(
             results["feature_importance"],
             save_path=os.path.join(output_dir, "feature_importance.png")
@@ -516,7 +570,7 @@ def generate_all_visualizations(results: dict, output_dir: str):
 
     # 6. Network Visualization
     if "G_full" in results:
-        print("[6/8] Network Visualization...")
+        print("[6/9] Network Visualization...")
         plot_ppi_network(
             results["G_full"],
             predicted_edges=results.get("top_predictions", None),
@@ -525,7 +579,7 @@ def generate_all_visualizations(results: dict, output_dir: str):
 
     # 7. Degree Distribution
     if "G_full" in results:
-        print("[7/8] Degree Distribution...")
+        print("[7/9] Degree Distribution...")
         plot_degree_distribution(
             results["G_full"],
             save_path=os.path.join(output_dir, "degree_distribution.png")
@@ -533,11 +587,19 @@ def generate_all_visualizations(results: dict, output_dir: str):
 
     # 8. Score Distributions
     if "scores_positive" in results and "scores_negative" in results:
-        print("[8/8] Score Distributions...")
+        print("[8/9] Score Distributions...")
         plot_score_distributions(
             results["scores_positive"],
             results["scores_negative"],
             save_path=os.path.join(output_dir, "score_distributions.png")
+        )
+
+    # 9. Confusion Matrices
+    if "confusion_matrices" in results:
+        print("[9/9] Confusion Matrices...")
+        plot_confusion_matrices(
+            results["confusion_matrices"],
+            save_path=os.path.join(output_dir, "confusion_matrices.png")
         )
 
     print(f"\n[Viz] Semua visualisasi disimpan di: {output_dir}")

@@ -215,6 +215,7 @@ class Dashboard:
             "roc_png": os.path.join(scenario_path, "roc_curves.png"),
             "metrics_png": os.path.join(scenario_path, "metrics_comparison.png"),
             "fi_png": os.path.join(scenario_path, "feature_importance.png"),
+            "cm_png": os.path.join(scenario_path, "confusion_matrices.png"),
         }
 
         for name, path in required.items():
@@ -337,12 +338,23 @@ class Dashboard:
             "semakin besar pengaruh metode tersebut terhadap prediksi."
         )
 
-        # --- Tab 5: Prediksi Baru ---
+        # --- Tab 5: Confusion Matrix ---
         tab5 = tk.Frame(notebook, bg="#0f172a")
-        notebook.add(tab5, text="  Prediksi Baru  ")
+        notebook.add(tab5, text="  Confusion Matrix  ")
+        self._create_image_tab(
+            tab5, self.files["cm_png"],
+            "Confusion Matrix menunjukkan distribusi prediksi benar dan salah "
+            "untuk setiap metode. TN = True Negative, FP = False Positive, "
+            "FN = False Negative, TP = True Positive. Threshold optimal "
+            "ditentukan menggunakan Youden's J statistic dari kurva ROC."
+        )
+
+        # --- Tab 6: Prediksi Baru ---
+        tab6 = tk.Frame(notebook, bg="#0f172a")
+        notebook.add(tab6, text="  Prediksi Baru  ")
 
         tk.Label(
-            tab5,
+            tab6,
             text="Pasangan protein yang diprediksi berinteraksi oleh Random "
                  "Forest. Skor mendekati 1.0 = confidence tinggi.",
             bg="#0f172a", fg="#94a3b8", font=("Segoe UI", 10),
@@ -353,7 +365,7 @@ class Dashboard:
         extra_cols = [c for c in self.df_pred.columns
                       if c not in pred_cols and c not in ["Rank", "Unnamed: 0"]]
         df_pred_display = self.df_pred[pred_cols + extra_cols].head(30)
-        self._create_table(tab5, df_pred_display)
+        self._create_table(tab6, df_pred_display)
 
     def _create_table(self, parent, df: pd.DataFrame,
                       highlight_first: bool = False):

@@ -31,6 +31,8 @@ from sklearn.metrics import (
     average_precision_score,
     precision_recall_curve,
     roc_curve,
+    accuracy_score,
+    confusion_matrix,
 )
 
 
@@ -119,6 +121,68 @@ def compute_top_k_precision(y_true: np.ndarray,
     return np.sum(top_k_labels) / k
 
 
+def compute_accuracy(y_true: np.ndarray, y_scores: np.ndarray) -> float:
+    """
+    Menghitung Accuracy menggunakan threshold optimal dari kurva ROC.
+
+    Threshold dipilih sebagai titik pada kurva ROC yang memaksimalkan
+    Youden's J statistic (TPR - FPR), sehingga menghasilkan keseimbangan
+    terbaik antara sensitivitas dan spesifisitas.
+
+    Parameters
+    ----------
+    y_true : np.ndarray
+        Label sebenarnya (0 atau 1).
+    y_scores : np.ndarray
+        Skor prediksi (nilai kontinu).
+
+    Returns
+    -------
+    float
+        Nilai accuracy pada threshold optimal.
+    """
+    if len(np.unique(y_true)) < 2:
+        return 0.0
+
+    fpr, tpr, thresholds = roc_curve(y_true, y_scores)
+    # Youden's J statistic: optimal threshold = max(TPR - FPR)
+    j_scores = tpr - fpr
+    best_idx = np.argmax(j_scores)
+    best_threshold = thresholds[best_idx]
+
+    y_pred = (y_scores >= best_threshold).astype(int)
+    return accuracy_score(y_true, y_pred)
+
+
+def compute_confusion_matrix(y_true: np.ndarray,
+                             y_scores: np.ndarray) -> np.ndarray:
+    """
+    Menghitung Confusion Matrix menggunakan threshold optimal dari kurva ROC.
+
+    Parameters
+    ----------
+    y_true : np.ndarray
+        Label sebenarnya (0 atau 1).
+    y_scores : np.ndarray
+        Skor prediksi (nilai kontinu).
+
+    Returns
+    -------
+    np.ndarray
+        Confusion matrix 2x2: [[TN, FP], [FN, TP]].
+    """
+    if len(np.unique(y_true)) < 2:
+        return np.zeros((2, 2), dtype=int)
+
+    fpr, tpr, thresholds = roc_curve(y_true, y_scores)
+    j_scores = tpr - fpr
+    best_idx = np.argmax(j_scores)
+    best_threshold = thresholds[best_idx]
+
+    y_pred = (y_scores >= best_threshold).astype(int)
+    return confusion_matrix(y_true, y_pred)
+
+
 # ---------------------------------------------------------------------------
 # EVALUASI SATU METODE
 # ---------------------------------------------------------------------------
@@ -160,11 +224,14 @@ def evaluate_method(method_name: str,
     # Hitung metrik
     auc_roc = compute_auc_roc(y_true, y_scores)
     aupr = compute_aupr(y_true, y_scores)
+    acc = compute_accuracy(y_true, y_scores)
+    cm = compute_confusion_matrix(y_true, y_scores)
 
     result = {
         "Method": method_name,
         "AUC-ROC": auc_roc,
         "AUPR": aupr,
+        "Accuracy": acc,
     }
 
     # Top-k Precision
@@ -174,9 +241,10 @@ def evaluate_method(method_name: str,
                 y_true, y_scores, k
             )
 
-    # Simpan juga data mentah untuk kurva
+    # Simpan data mentah untuk kurva dan confusion matrix
     result["_y_true"] = y_true
     result["_y_scores"] = y_scores
+    result["_confusion_matrix"] = cm
 
     return result
 
@@ -230,10 +298,12 @@ def evaluate_all_methods(scores_positive: dict,
         curve_data[method_name] = {
             "y_true": result.pop("_y_true"),
             "y_scores": result.pop("_y_scores"),
+            "confusion_matrix": result.pop("_confusion_matrix"),
         }
         results.append(result)
         print(f"    AUC-ROC: {result['AUC-ROC']:.4f}, "
-              f"AUPR: {result['AUPR']:.4f}")
+              f"AUPR: {result['AUPR']:.4f}, "
+              f"Accuracy: {result['Accuracy']:.4f}")
 
     # Evaluasi Random Forest (metode ke-8)
     if rf_pred_positive is not None and rf_pred_negative is not None:
@@ -247,10 +317,12 @@ def evaluate_all_methods(scores_positive: dict,
         curve_data["Random Forest"] = {
             "y_true": result.pop("_y_true"),
             "y_scores": result.pop("_y_scores"),
+            "confusion_matrix": result.pop("_confusion_matrix"),
         }
         results.append(result)
         print(f"    AUC-ROC: {result['AUC-ROC']:.4f}, "
-              f"AUPR: {result['AUPR']:.4f}")
+              f"AUPR: {result['AUPR']:.4f}, "
+              f"Accuracy: {result['Accuracy']:.4f}")
 
     # Buat DataFrame hasil
     df_results = pd.DataFrame(results)
