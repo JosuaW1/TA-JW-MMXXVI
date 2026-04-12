@@ -252,35 +252,47 @@ def run_scenario(scenario: dict) -> dict:
     G_train = data["G_train"]
     test_edges = data["test_edges"]
     negative_samples = data["negative_samples"]
+    rf_train_pos = data["rf_train_pos"]
+    rf_train_neg = data["rf_train_neg"]
 
     # ------------------------------------------------------------------
     # TAHAP 2: HITUNG SKOR TOPOLOGI
     # ------------------------------------------------------------------
     print_header("TAHAP 2: HITUNG SKOR 7 METODE TOPOLOGI")
 
+    # Skor untuk evaluasi (test set) — semua metode dievaluasi di sini
     print("\n--- Skor untuk Test Edges (Positif) ---")
     scores_positive = compute_all_scores(G_train, test_edges)
 
     print("\n--- Skor untuk Negative Samples ---")
     scores_negative = compute_all_scores(G_train, negative_samples)
 
+    # Skor untuk training RF — dari training edges, BUKAN test edges
+    print("\n--- Skor untuk RF Training (Positif dari Training Edges) ---")
+    rf_scores_positive = compute_all_scores(G_train, rf_train_pos)
+
+    print("\n--- Skor untuk RF Training (Negatif dari Non-Edges) ---")
+    rf_scores_negative = compute_all_scores(G_train, rf_train_neg)
+
     # ------------------------------------------------------------------
     # TAHAP 3: RANDOM FOREST (METODE KE-8)
     # ------------------------------------------------------------------
     print_header("TAHAP 3: RANDOM FOREST CLASSIFIER")
 
-    # Siapkan data ML
-    X, y, feature_names = prepare_ml_data(scores_positive, scores_negative)
+    # Siapkan data ML dari TRAINING samples (bukan test!)
+    X_train, y_train, feature_names = prepare_ml_data(
+        rf_scores_positive, rf_scores_negative
+    )
 
-    # Latih model
+    # Latih model pada training data
     rf_result = train_random_forest(
-        X, y, feature_names,
+        X_train, y_train, feature_names,
         n_estimators=CONFIG["rf_n_estimators"],
         max_depth=CONFIG["rf_max_depth"],
         random_state=CONFIG["random_state"],
     )
 
-    # Prediksi skor RF untuk test edges dan negative samples
+    # Prediksi skor RF untuk TEST set (data yang belum pernah dilihat)
     rf_pred_positive = predict_scores(rf_result["model"], scores_positive)
     rf_pred_negative = predict_scores(rf_result["model"], scores_negative)
 

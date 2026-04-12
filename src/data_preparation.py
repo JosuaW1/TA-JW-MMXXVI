@@ -349,7 +349,80 @@ def generate_negative_samples(G: nx.Graph,
 
 
 # ---------------------------------------------------------------------------
-# 6. PIPELINE UTAMA DATA PREPARATION
+# 6. SAMPLING DATA TRAINING UNTUK RANDOM FOREST
+# ---------------------------------------------------------------------------
+
+def generate_rf_training_data(G_train: nx.Graph,
+                              num_samples: int,
+                              random_state: int = 42) -> tuple:
+    """
+    Menghasilkan data training untuk Random Forest dari graf training.
+
+    Positive samples: diambil secara acak dari TRAINING edges (edge yang
+    benar-benar ada di graf training). Ini BUKAN test edges.
+
+    Negative samples: pasangan node yang TIDAK memiliki edge di graf
+    training.
+
+    Dengan cara ini, RF dilatih hanya dari informasi yang ada di graf
+    training, tanpa melihat test edges sama sekali. Ini mencegah data
+    leakage.
+
+    Parameters
+    ----------
+    G_train : nx.Graph
+        Graf training.
+    num_samples : int
+        Jumlah positive samples (dan negative samples) yang diinginkan.
+    random_state : int, default=42
+        Seed untuk reprodusibilitas.
+
+    Returns
+    -------
+    tuple
+        (rf_train_pos, rf_train_neg)
+        - rf_train_pos: list of tuple, positive samples dari training edges
+        - rf_train_neg: list of tuple, negative samples dari non-edges
+    """
+    rng = random.Random(random_state + 100)  # seed berbeda dari split
+
+    # Positive: sampling dari training edges
+    train_edges = list(G_train.edges())
+    rng.shuffle(train_edges)
+    num_pos = min(num_samples, len(train_edges))
+    rf_train_pos = train_edges[:num_pos]
+
+    # Negative: sampling dari non-edges di graf training
+    nodes = list(G_train.nodes())
+    edge_set = set()
+    for u, v in G_train.edges():
+        edge_set.add((u, v))
+        edge_set.add((v, u))
+
+    rf_train_neg = []
+    seen = set()
+    attempts = 0
+    max_attempts = num_pos * 20
+
+    while len(rf_train_neg) < num_pos and attempts < max_attempts:
+        u = rng.choice(nodes)
+        v = rng.choice(nodes)
+        attempts += 1
+        if u == v or (u, v) in edge_set:
+            continue
+        pair = tuple(sorted([u, v]))
+        if pair not in seen:
+            seen.add(pair)
+            rf_train_neg.append((pair[0], pair[1]))
+
+    print(f"[RF Data] Positive samples (dari training edges): {len(rf_train_pos)}")
+    print(f"[RF Data] Negative samples (dari non-edges): {len(rf_train_neg)}")
+
+    return rf_train_pos, rf_train_neg
+
+
+# ---------------------------------------------------------------------------
+# 7. PIPELINE UTAMA DATA PREPARATION
 # ---------------------------------------------------------------------------
 
 def prepare_data(filepath: str,
@@ -408,10 +481,17 @@ def prepare_data(filepath: str,
         G_full, test_ratio=test_ratio, random_state=random_state
     )
 
-    # 6. Negative sampling
-    print("\n--- Tahap 6: Negative Sampling ---")
+    # 6. Negative sampling (untuk evaluasi test set)
+    print("\n--- Tahap 6: Negative Sampling (Test) ---")
     negative_samples = generate_negative_samples(
         G_full, num_samples=len(test_edges), random_state=random_state
+    )
+
+    # 7. Training data untuk Random Forest (dari training edges, BUKAN test)
+    print("\n--- Tahap 7: Sampling Data Training RF ---")
+    rf_train_pos, rf_train_neg = generate_rf_training_data(
+        G_train, num_samples=len(test_edges) * 3,
+        random_state=random_state
     )
 
     print("\n" + "=" * 60)
@@ -422,6 +502,8 @@ def prepare_data(filepath: str,
     print(f"  Training edges      : {G_train.number_of_edges()}")
     print(f"  Testing edges (+)   : {len(test_edges)}")
     print(f"  Negative samples (-): {len(negative_samples)}")
+    print(f"  RF train pos        : {len(rf_train_pos)}")
+    print(f"  RF train neg        : {len(rf_train_neg)}")
     print(f"  Graf training connected: {nx.is_connected(G_train)}")
     print("=" * 60)
 
@@ -430,5 +512,7 @@ def prepare_data(filepath: str,
         "G_train": G_train,
         "test_edges": test_edges,
         "negative_samples": negative_samples,
+        "rf_train_pos": rf_train_pos,
+        "rf_train_neg": rf_train_neg,
         "df_filtered": df_filtered,
     }
