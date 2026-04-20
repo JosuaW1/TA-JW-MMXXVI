@@ -65,6 +65,7 @@ from visualization import generate_all_visualizations
 SCENARIOS = [
     {"name": "skenario_04", "min_score": 0.4, "label": "Medium Confidence (>= 0.4)"},
     {"name": "skenario_07", "min_score": 0.7, "label": "High Confidence (>= 0.7)"},
+    {"name": "skenario_09", "min_score": 0.9, "label": "Highest Confidence (>= 0.9)"},
 ]
 
 CONFIG = {

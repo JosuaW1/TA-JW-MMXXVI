@@ -1,3 +1,0 @@
-Skenario,Threshold,Protein,Interaksi,Metode Terbaik,AUC-ROC,AUPR
-Medium Confidence (>= 0.4),0.4,884,27973,Resource Allocation,0.9395548553029838,0.9408572122247365
-High Confidence (>= 0.7),0.7,834,8473,Resource Allocation,0.9551845599929746,0.9544580915321317

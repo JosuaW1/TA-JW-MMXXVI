@@ -248,29 +248,37 @@ def split_train_test(G: nx.Graph,
     print(f"[Split] Total edges: {len(edges)}")
     print(f"[Split] Target test edges: {num_test}")
 
-    # Identifikasi bridges (edge yang tidak boleh dihapus)
-    bridges = set(nx.bridges(G))
-    print(f"[Split] Jumlah bridge edges: {len(bridges)}")
+    # Identifikasi bridges awal (informatif saja)
+    bridges_initial = set(nx.bridges(G))
+    print(f"[Split] Jumlah bridge edges (awal): {len(bridges_initial)}")
 
-    # Kandidat edge yang bisa dihapus (bukan bridge)
-    removable = [e for e in edges if e not in bridges
-                 and (e[1], e[0]) not in bridges]
-    rng.shuffle(removable)
+    # Kandidat: non-bridge di awal, di-shuffle
+    candidates = [e for e in edges if e not in bridges_initial
+                  and (e[1], e[0]) not in bridges_initial]
+    rng.shuffle(candidates)
 
-    if len(removable) < num_test:
-        print(f"[Split] WARNING: hanya {len(removable)} edge yang bisa "
-              f"dihapus tanpa memutus graf (target: {num_test})")
-        num_test = len(removable)
-
-    test_edges = removable[:num_test]
-
-    # Bangun graf training
+    # Hapus edge satu per satu, cek konektivitas setiap iterasi
+    # agar bridge baru yang terbentuk setelah penghapusan tidak ikut dihapus
     G_train = G.copy()
-    G_train.remove_edges_from(test_edges)
+    test_edges = []
 
-    # Validasi konektivitas
-    assert nx.is_connected(G_train), \
-        "GAGAL: Graf training tidak terhubung setelah split!"
+    for u, v in candidates:
+        if len(test_edges) >= num_test:
+            break
+        # Cek apakah edge ini masih ada (bisa sudah dihapus lewat arah lain)
+        if not G_train.has_edge(u, v):
+            continue
+        # Hapus sementara, cek konektivitas
+        G_train.remove_edge(u, v)
+        if nx.is_connected(G_train):
+            test_edges.append((u, v))
+        else:
+            # Kembalikan — edge ini sekarang jadi bridge baru
+            G_train.add_edge(u, v)
+
+    if len(test_edges) < num_test:
+        print(f"[Split] WARNING: hanya {len(test_edges)} edge yang bisa "
+              f"dihapus tanpa memutus graf (target: {num_test})")
 
     print(f"[Split] Edge training: {G_train.number_of_edges()}")
     print(f"[Split] Edge testing: {len(test_edges)}")
