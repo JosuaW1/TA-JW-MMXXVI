@@ -63,6 +63,11 @@ from visualization import generate_all_visualizations
 # Daftar skenario confidence score yang akan dijalankan
 # Tambah/hapus skenario cukup edit list ini
 SCENARIOS = [
+    # Hapus tanda '#' di bawah untuk mengaktifkan skenario Low Confidence (>= 0.15)
+    # PERINGATAN: skenario ini membutuhkan waktu komputasi ~60-70 menit
+    # karena memproses 105.496 interaksi (data: string_interactions_short.tsv)
+    # {"name": "skenario_015", "min_score": 0.15, "label": "Low Confidence (>= 0.15)"},
+
     {"name": "skenario_04", "min_score": 0.4, "label": "Medium Confidence (>= 0.4)"},
     {"name": "skenario_07", "min_score": 0.7, "label": "High Confidence (>= 0.7)"},
     {"name": "skenario_09", "min_score": 0.9, "label": "Highest Confidence (>= 0.9)"},
@@ -72,7 +77,7 @@ CONFIG = {
     # Path data STRING (subset protein kanker paru-paru dari UniProt)
     # Format TSV: #node1, node2, ..., combined_score (skala 0-1)
     "data_path": os.path.join(BASE_DIR, "data",
-                              "string_interactions.tsv"),
+                              "string_interactions_short.tsv"),
 
     # Proporsi testing edges
     "test_ratio": 0.10,
